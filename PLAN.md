@@ -14,11 +14,11 @@ Telegram Bot (python-telegram-bot)
     ↓ forwards message
 AI Agent (Ollama, running locally)
     ↓ picks the right tool to call
-Python MCP Client (mcp library)
-    ↓ MCP protocol over SSE
-HA MCP Server (built into Home Assistant at 192.168.0.51:8123)
-    ↓ executes the action
-Home Assistant
+Python MCP Client (mcp library, stdio transport)
+    ↓ stdin/stdout
+ha-mcp subprocess (uvx ha-mcp@latest) — 89 tools
+    ↓ WebSocket API over Nabu Casa
+Home Assistant (2026.3.0)
     ↑ returns result
 Telegram Bot → sends confirmation back to you
 ```
@@ -37,19 +37,19 @@ Telegram Bot → sends confirmation back to you
 
 ---
 
-### Phase 2: Home Assistant MCP Connection
-**Goal:** Connect to the HA MCP server from Python and list available tools.
+### Phase 2: Home Assistant MCP Connection ✅
+**Goal:** Connect to HA via the ha-mcp community package and list available tools.
 
-Files to create:
-- `ha_mcp_client.py` — connects to HA MCP server, lists tools, executes tool calls
+Files created:
+- `ha_mcp_client.py` — launches ha-mcp subprocess, lists tools, executes tool calls
 
-Steps:
-1. Use the `mcp` Python library to connect to `http://192.168.0.51:8123/mcp_server/sse`
-2. Authenticate with a Long-Lived Access Token
-3. Call `list_tools()` to see what HA exposes (lights, switches, sensors, etc.)
-4. Test calling a simple tool (e.g., get the state of a light)
+Steps completed:
+1. Discovered the correct MCP setup: `ha-mcp` community package via `uvx`
+2. Uses Nabu Casa cloud URL for connectivity (not local IP)
+3. Uses stdio MCP transport (subprocess) instead of SSE
+4. Connected successfully — 89 tools available
 
-Milestone: Running `python ha_mcp_client.py` prints all available HA tools.
+Milestone: ✅ Running `python ha_mcp_client.py` prints all 89 available HA tools.
 
 ---
 
@@ -109,8 +109,8 @@ httpx                # HTTP client (used internally by mcp)
 
 ## Environment Variables (.env)
 ```
-HA_MCP_URL=http://192.168.0.51:8123/mcp_server/sse
-HA_TOKEN=<long-lived access token from HA>
+HOMEASSISTANT_URL=https://your-instance.ui.nabu.casa
+HOMEASSISTANT_TOKEN=<long-lived access token from HA>
 TELEGRAM_BOT_TOKEN=<token from @BotFather>
 TELEGRAM_ALLOWED_USER_IDS=<your Telegram numeric user ID>
 OLLAMA_MODEL=llama3.2
