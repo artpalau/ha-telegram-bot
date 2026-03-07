@@ -1,16 +1,12 @@
 """
 ha_mcp_client.py
 
-Connects to Home Assistant via the ha-mcp community package.
+Connects to the Home Assistant built-in MCP server using the Streamable HTTP
+transport. This is much faster than the subprocess approach — it's a direct
+HTTP connection with no startup overhead.
 
-How this works:
-  Instead of connecting to a running server, we launch the `ha-mcp` tool
-  as a subprocess and communicate with it over stdin/stdout. This is called
-  a "stdio MCP server" — the process starts, we exchange messages, and it
-  exits when we're done. The ha-mcp package handles all HA communication
-  internally using your Nabu Casa URL and token.
-
-  ha-mcp docs: https://github.com/vocoode/ha-mcp
+The private URL contains the auth token, so no separate Authorization header
+is needed. The URL is stored in .env as HA_MCP_URL.
 """
 
 import asyncio
@@ -18,46 +14,23 @@ import os
 
 from dotenv import load_dotenv
 from mcp import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
+from mcp.client.streamable_http import streamablehttp_client
 
 load_dotenv()
 
-HOMEASSISTANT_URL = os.getenv("HOMEASSISTANT_URL")
-HOMEASSISTANT_TOKEN = os.getenv("HOMEASSISTANT_TOKEN")
-
-# These are the parameters needed to launch the ha-mcp subprocess.
-# uvx downloads and runs ha-mcp@latest automatically — no manual install needed.
-_SERVER_PARAMS = StdioServerParameters(
-    command="uvx",
-    args=["ha-mcp@latest"],
-    env={
-        "HOMEASSISTANT_URL": HOMEASSISTANT_URL,
-        "HOMEASSISTANT_TOKEN": HOMEASSISTANT_TOKEN,
-    },
-)
+HA_MCP_URL = os.getenv("HA_MCP_URL")
 
 
 async def get_tools() -> list[dict]:
     """
-    Launch the ha-mcp subprocess, ask it what tools are available,
-    and return them in the format Ollama expects (OpenAI-compatible).
-
-    Each tool looks like:
-    {
-        "type": "function",
-        "function": {
-            "name": "HassTurnOn",
-            "description": "Turn on a device or entity",
-            "parameters": { ...JSON schema... }
-        }
-    }
+    Connect to the HA MCP server and return all available tools
+    in the format Ollama expects (OpenAI-compatible tool spec).
     """
-    async with stdio_client(_SERVER_PARAMS) as (read, write):
+    async with streamablehttp_client(url=HA_MCP_URL) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
             result = await session.list_tools()
 
-            # Convert MCP tool format → Ollama tool format
             ollama_tools = []
             for tool in result.tools:
                 ollama_tools.append({
@@ -74,19 +47,14 @@ async def get_tools() -> list[dict]:
 
 async def call_tool(tool_name: str, arguments: dict) -> str:
     """
-    Launch the ha-mcp subprocess, execute a specific tool, and return
-    the result as a plain string.
-
-    tool_name  — the name of the tool, e.g. "HassTurnOn"
-    arguments  — a dict of parameters, e.g. {"name": "kitchen light"}
+    Connect to the HA MCP server, execute a tool, and return the result
+    as a plain string.
     """
-    async with stdio_client(_SERVER_PARAMS) as (read, write):
+    async with streamablehttp_client(url=HA_MCP_URL) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
             result = await session.call_tool(tool_name, arguments)
 
-            # The result contains a list of content blocks (text, images, etc.)
-            # We only care about text content here.
             text_parts = []
             for content in result.content:
                 if hasattr(content, "text"):
@@ -100,16 +68,13 @@ async def call_tool(tool_name: str, arguments: dict) -> str:
 #   python ha_mcp_client.py
 
 async def _main():
-    print("Launching ha-mcp and connecting to Home Assistant...")
-    print(f"HA URL: {HOMEASSISTANT_URL}\n")
-
+    print(f"Connecting to HA MCP server...")
     tools = await get_tools()
     print(f"Found {len(tools)} tools:\n")
     for tool in tools:
         fn = tool["function"]
         print(f"  • {fn['name']}")
         print(f"    {fn['description'][:80]}")
-    print()
 
 
 if __name__ == "__main__":

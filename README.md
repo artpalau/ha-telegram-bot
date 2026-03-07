@@ -62,8 +62,7 @@ All secrets and settings are in `.env` (never committed to git):
 
 | Variable | Description |
 |---|---|
-| `HOMEASSISTANT_URL` | Your Nabu Casa URL |
-| `HOMEASSISTANT_TOKEN` | HA Long-Lived Access Token |
+| `HA_MCP_URL` | HA built-in MCP server URL (Settings → Integrations → MCP) |
 | `TELEGRAM_BOT_TOKEN` | Token from @BotFather |
 | `TELEGRAM_ALLOWED_USER_IDS` | Your Telegram user ID (only you can use the bot) |
 | `OLLAMA_MODEL` | AI model to use (default: `qwen3.5:9b`) |

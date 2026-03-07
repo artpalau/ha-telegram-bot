@@ -6,9 +6,9 @@ as the brain. You send a message, the AI interprets it, and Home Assistant acts 
 
 ## Home Assistant Setup
 - Local URL: http://192.168.0.51:8123
-- Remote URL: Nabu Casa cloud (used by the bot for connectivity from anywhere)
 - Version: 2026.3.0
-- MCP Package: `ha-mcp` (community package, run via `uvx ha-mcp@latest`)
+- MCP Server: Built-in HA MCP server (Streamable HTTP transport, port 9583)
+- MCP URL: stored in `.env` as `HA_MCP_URL` (contains auth token in path)
 
 ## Key Files
 
@@ -30,11 +30,11 @@ as the brain. You send a message, the AI interprets it, and Home Assistant acts 
 | `ollama` | Official Python client for the local Ollama server |
 | `python-dotenv` | Standard way to load secrets from a .env file |
 
-## How ha-mcp Works
-`ha-mcp` is a community MCP server that wraps the HA WebSocket API. Instead of
-connecting to a running server, we launch it as a subprocess with `uvx ha-mcp@latest`
-and communicate via stdin/stdout (stdio transport). It exposes 89 tools covering
-entities, automations, dashboards, history, and more.
+## How the HA MCP Server Works
+HA's built-in MCP server runs on port 9583 and uses the Streamable HTTP transport.
+Authentication is via a private token embedded in the URL (no Authorization header).
+It exposes 89 tools covering entities, automations, dashboards, history, and more.
+The connection is a direct HTTP call — no subprocess, no startup overhead.
 
 ## How the AI Tool Call Loop Works
 1. User message arrives via Telegram
@@ -52,8 +52,8 @@ entities, automations, dashboards, history, and more.
 - Bot connects to HA via Nabu Casa (works from any network)
 
 ## Key Decisions
-- Using `ha-mcp` (community package via uvx) instead of the built-in HA MCP server —
-  it exposes far more tools (89 vs a handful) and works via Nabu Casa cloud URL
+- Using the built-in HA MCP server (Streamable HTTP) over the ha-mcp community
+  package — faster (no subprocess), same 89 tools, simpler architecture
 - Using Ollama (local) instead of Claude API to keep everything on-device and free
-- Model: llama3.2 (supports tool calling, runs well on Apple Silicon)
-- stdio MCP transport: ha-mcp runs as a subprocess, no server to manage
+- Model: qwen3.5:9b (supports tool calling, 256K context, runs well on Apple Silicon)
+- Streamable HTTP MCP transport: direct HTTP connection, no subprocess to manage
