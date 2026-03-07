@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
-from ai_agent import run as agent_run
+from ha_agent import load_context, run as agent_run
 
 load_dotenv()
 
@@ -120,6 +120,10 @@ def main() -> None:
 
     # Register a handler for all plain text messages
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    # Load HA entity context once at startup so the model knows all entity IDs.
+    import asyncio
+    asyncio.get_event_loop().run_until_complete(load_context())
 
     log.info("Bot is running. Press Ctrl+C to stop.")
     app.run_polling()
