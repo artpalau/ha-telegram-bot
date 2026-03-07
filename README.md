@@ -27,7 +27,7 @@ Verify it's running:
 ollama ps
 ```
 
-### 2. Start the Bot
+### 2a. Start the Telegram Bot
 
 Open a terminal, navigate to the project folder, and run:
 
@@ -45,11 +45,32 @@ You should see:
 
 The bot is now live. Send it a message on Telegram to test.
 
-### 3. Stop the Bot
+### 2b. Use the Terminal Chat (no Telegram needed)
 
-Press `Ctrl+C` in the terminal where the bot is running.
+To control Home Assistant directly from your terminal:
 
-If the bot is running in the background and you need to force-stop it:
+```bash
+cd ~/Documents/Projects/ha-telegram-bot
+source .venv/bin/activate
+python ai_agent.py
+```
+
+Then just type commands naturally:
+```
+You: turn off the office lights
+Bot: The office lights have been turned off.
+
+You: what's the temperature upstairs?
+Bot: The upstairs Nest thermostat is set to 68°F.
+
+You: exit
+```
+
+Press `Ctrl+C` or type `exit` to quit.
+
+### 3. Stop
+
+Press `Ctrl+C` in the terminal. To force-stop a background bot:
 ```bash
 pkill -f "python bot.py"
 ```
