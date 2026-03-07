@@ -125,10 +125,13 @@ def _filter_tools(all_tools: list[dict]) -> list[dict]:
     ]
 
 
-async def run(user_message: str) -> str:
+async def run(user_message: str, show_thinking: bool = False) -> str:
     """
     Process a user's message and return the AI's final reply.
     Call load_context() at least once before calling this.
+
+    show_thinking — if True, prints the model's chain-of-thought reasoning
+                    to the terminal (never included in the returned reply).
     """
     all_tools = await get_tools()
     tools = _filter_tools(all_tools)
@@ -144,9 +147,16 @@ async def run(user_message: str) -> str:
             model=OLLAMA_MODEL,
             messages=messages,
             tools=tools,
+            think=True,   # asks qwen3.5 to output its reasoning before answering
         )
 
         assistant_message = response.message
+
+        # Print the model's thinking if available and requested.
+        # This is purely for terminal debugging — it never reaches Telegram.
+        if show_thinking and getattr(assistant_message, "thinking", None):
+            print(f"\n🧠 Thinking: {assistant_message.thinking}\n")
+
         messages.append(assistant_message)
 
         if not assistant_message.tool_calls:
@@ -196,7 +206,7 @@ async def _main():
             break
 
         print("Thinking...")
-        reply = await run(user_input)
+        reply = await run(user_input, show_thinking=True)
         print(f"\nBot: {reply}\n")
 
 
