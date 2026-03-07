@@ -41,28 +41,29 @@ ALLOWED_TOOLS = {
     "ha_search_entities",   # find entities by name or domain
     "ha_get_state",         # check if a device is on/off, get sensor reading
     "ha_get_states",        # check multiple devices at once
-    "ha_call_service",      # turn on/off, set brightness, set temperature, etc.
-    "ha_bulk_control",      # control multiple devices in one call
     "ha_get_overview",      # general home status summary
     "ha_get_history",       # was a device on/off at a certain time?
     "ha_list_services",     # discover what services a domain supports
 }
+# READ-ONLY MODE: ha_call_service and ha_bulk_control are intentionally excluded.
+# Re-add them here once testing is complete and you're happy with the agent.
 
 # This gets populated by load_context() at startup.
 # It holds a human-readable map of your devices (name → entity_id).
 _entity_context = ""
 
 # Base system prompt — entity context gets appended to this at startup.
-_BASE_PROMPT = """You are a Home Assistant controller with full access to the user's smart home.
+_BASE_PROMPT = """You are a Home Assistant assistant in READ-ONLY mode.
+You can query and report on the smart home but you cannot change anything.
 
 RULES — follow these exactly:
 - ALWAYS use tools. Never say you "can't" or "don't have access" — you do.
-- Use the entity list below to find the correct entity_id before calling ha_call_service.
-- To turn a device on/off: call ha_call_service with the correct domain and entity_id.
-  Example: domain="light", service="turn_off", entity_id="light.office1_light"
+- READ-ONLY: do not attempt to turn devices on/off or change any settings.
+  If asked to control something, explain that you are in read-only mode.
+- To find devices: use ha_search_entities.
 - To check a device state: use ha_get_state with the entity_id.
-- If you're unsure of an entity_id: use ha_search_entities first.
-- Be concise: one sentence to confirm success, or report what you found briefly.
+- To get a home overview: use ha_get_overview.
+- Be concise: report what you found in a few sentences.
 """
 
 
