@@ -18,7 +18,6 @@ multiple tool calls together to answer complex questions like
 """
 
 import asyncio
-import json
 import os
 
 import ollama
@@ -32,11 +31,16 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3.5:9b")
 
 # This is the system prompt — it tells the model what its job is and
 # how to behave. A clear system prompt makes responses much more consistent.
-SYSTEM_PROMPT = """You are a helpful Home Assistant controller.
-The user will give you commands or questions about their smart home.
-Use the available tools to carry out their requests and report back clearly.
-Be concise in your responses — one or two sentences is usually enough.
-If a command succeeds, confirm it briefly. If something fails, explain why simply."""
+SYSTEM_PROMPT = """You are a Home Assistant controller with full access to the user's smart home.
+You have tools to control and query EVERYTHING in Home Assistant.
+
+IMPORTANT RULES:
+- ALWAYS use tools to answer questions or carry out commands. Never say you "don't have access" — you do.
+- To find lights, switches, sensors or any device: use ha_search_entities or ha_get_overview.
+- To turn devices on/off or change settings: use ha_call_service.
+- To get the current state of a device: use ha_get_state or ha_get_states.
+- If one tool doesn't return what you need, try another. Never give up without trying at least one tool.
+- Be concise: confirm success in one sentence, or report what you found briefly."""
 
 
 async def run(user_message: str) -> str:
@@ -100,20 +104,32 @@ async def run(user_message: str) -> str:
     return "I wasn't able to complete that request — too many steps required."
 
 
-# ── Quick test ────────────────────────────────────────────────────────────────
-# Run this file directly to test the full AI + HA pipeline:
+# ── Interactive terminal mode ─────────────────────────────────────────────────
+# Run this file directly to chat with your Home Assistant from the terminal:
 #   python ai_agent.py
+#
+# Type any command and press Enter. Type 'exit' or press Ctrl+C to quit.
 
 async def _main():
-    test_commands = [
-        "What areas do you have in Home Assistant?",
-    ]
+    print(f"\nHome Assistant AI — using {OLLAMA_MODEL}")
+    print("Type a command or question. Press Ctrl+C or type 'exit' to quit.\n")
 
-    for command in test_commands:
-        print(f"\nUser: {command}")
-        print("Agent is thinking...")
-        reply = await run(command)
-        print(f"Bot: {reply}")
+    while True:
+        try:
+            user_input = input("You: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nBye!")
+            break
+
+        if not user_input:
+            continue
+        if user_input.lower() in ("exit", "quit", "bye"):
+            print("Bye!")
+            break
+
+        print("Thinking...")
+        reply = await run(user_input)
+        print(f"\nBot: {reply}\n")
 
 
 if __name__ == "__main__":
