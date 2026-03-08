@@ -116,7 +116,7 @@ async def _main():
 
     while True:
         try:
-            user_input = input("You: ").strip()
+            user_input = (await asyncio.to_thread(input, "You: ")).strip()
         except (EOFError, KeyboardInterrupt):
             print("\nBye!")
             break

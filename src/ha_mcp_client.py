@@ -68,7 +68,7 @@ async def call_tool(tool_name: str, arguments: dict) -> str:
 #   python ha_mcp_client.py
 
 async def _main():
-    print(f"Connecting to HA MCP server...")
+    print("Connecting to HA MCP server...")
     tools = await get_tools()
     print(f"Found {len(tools)} tools:\n")
     for tool in tools:
